@@ -180,6 +180,7 @@
 <li><a href="#automatic-import-script">Automatic import script</a></li>
 <li><a href="#preparing-the-infrastructure">Preparing the infrastructure</a></li>
 <li><a href="#time-to-play-with-your-application">Time to play with your application</a></li>
+<li><a href="#opensearch">OpenSearch compatibility</a></li>
 <li><a href="#multiple-persistence-units">Multiple persistence units</a>
 <ul class="sectlevel2">
 <li><a href="#configuring-multiple-persistence-units">Configuring multiple persistence units</a></li>
@@ -189,7 +190,7 @@
 <li><a href="#multiple-persistence-units-attaching-cdi">CDI integration</a></li>
 <li><a href="#building-a-native-executable">Building a native executable</a></li>
 <li><a href="#offline-startup">Offline startup</a></li>
-<li><a href="#aws-request-signing">AWS request signing</a></li>
+<li><a href="#aws-request-signing"> AWS request signing</a></li>
 <li><a href="#further-reading">Further reading</a></li>
 <li><a href="#faq">FAQ</a>
 <ul class="sectlevel2">
@@ -199,7 +200,6 @@
 <li><a href="#configuration-reference">Hibernate Search Configuration Reference</a>
 <ul class="sectlevel2">
 <li><a href="#configuration-reference-main">Main Configuration</a></li>
-<li><a href="#configuration-reference-aws">AWS Integration Configuration</a></li>
 </ul>
 </li>
 </ul></div>
@@ -210,8 +210,8 @@
 <p>You have a Hibernate ORM-based application? You want to provide a full-featured full-text search to your users? You&#8217;re at the right place.</p>
 </div>
 <div class="paragraph">
-<p>With this guide, you&#8217;ll learn how to synchronize your entities to an Elasticsearch cluster in a heart beat with Hibernate Search.
-We will also explore how you can can query your Elasticsearch cluster using the Hibernate Search API.</p>
+<p>With this guide, you&#8217;ll learn how to synchronize your entities to an Elasticsearch or OpenSearch cluster in a heartbeat with Hibernate Search.
+We will also explore how you can query your Elasticsearch or OpenSearch cluster using the Hibernate Search API.</p>
 </div>
 </div>
 </div>
@@ -1012,7 +1012,8 @@ quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=sync <i
 <td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>We need to tell Hibernate Search about the version of Elasticsearch we will use.
 It is important because there are significant differences between Elasticsearch mapping syntax depending on the version.
-Since the mapping is created at build time to reduce startup time, Hibernate Search cannot connect to the cluster to automatically detect the version.</td>
+Since the mapping is created at build time to reduce startup time, Hibernate Search cannot connect to the cluster to automatically detect the version.
+Note that, for OpenSearch, you need to prefix the version with <code>opensearch:</code>; see <a href="#opensearch">OpenSearch compatibility</a>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
@@ -1131,6 +1132,33 @@ INSERT INTO book(id, title, author_id) VALUES (nextval('hibernate_sequence'), '4
 </div>
 <div class="paragraph">
 <p>As you can see, all your updates are automatically synchronized to the Elasticsearch cluster.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="opensearch"><a class="anchor" href="#opensearch"></a>OpenSearch compatibility</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hibernate Search is compatible with both <a href="https://www.elastic.co/elasticsearch">Elasticsearch</a>
+and <a href="https://www.opensearch.org/">OpenSearch</a>,
+but it assumes it is working with an Elasticsearch cluster by default.</p>
+</div>
+<div class="paragraph">
+<p>To have Hibernate Search work with an OpenSearch cluster instead,
+<a href="https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#backend-elasticsearch-configuration-version">prefix the configured version with <code>opensearch:</code></a>,
+as shown below.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">quarkus.hibernate-search-orm.elasticsearch.version=opensearch:1.2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>All other configuration options and APIs are exactly the same as with Elasticsearch.</p>
+</div>
+<div class="paragraph">
+<p>You can find more information about compatible distributions and versions of Elasticsearch in
+<a href="https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#getting-started-compatibility">this section of Hibernate Search&#8217;s reference documentation</a>.</p>
 </div>
 </div>
 </div>
@@ -1379,61 +1407,18 @@ for more information.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="aws-request-signing"><a class="anchor" href="#aws-request-signing"></a>AWS request signing</h2>
+<h2 id="aws-request-signing"><a class="anchor" href="#aws-request-signing"></a><a id="configuration-reference-aws"></a> AWS request signing</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>If you need to use <a href="https://docs.aws.amazon.com/elasticsearch-service/">Amazon’s managed Elasticsearch service</a>,
 you will find it requires a proprietary authentication method involving request signing.</p>
 </div>
 <div class="paragraph">
-<p>To enable AWS request signing, an additional extension is required:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./mvnw quarkus:add-extension -Dextensions="hibernate-search-orm-elasticsearch-aws"</code></pre>
-</div>
+<p>You can enable AWS request signing in Hibernate Search by adding a dedicated extension to your project and configuring it.</p>
 </div>
 <div class="paragraph">
-<p>Once the extension is there, you will need some more configuration:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Configure the AWS region with
-<a href="#quarkus-hibernate-search-orm-elasticsearch-aws_quarkus.hibernate-search-orm.elasticsearch.aws.region"><code>quarkus.hibernate-search-orm.elasticsearch.aws.region</code></a>.</p>
-</li>
-<li>
-<p>Enable request signing with
-<a href="#quarkus-hibernate-search-orm-elasticsearch-aws_quarkus.hibernate-search-orm.elasticsearch.aws.signing.enabled"><code>quarkus.hibernate-search-orm.elasticsearch.aws.signing.enabled</code></a>.</p>
-</li>
-<li>
-<p>Optionally, configure how credentials are retrieved with
-<a href="#quarkus-hibernate-search-orm-elasticsearch-aws_quarkus.hibernate-search-orm.elasticsearch.aws.credentials.type"><code>quarkus.hibernate-search-orm.elasticsearch.aws.credentials.type</code></a>.
-The default gets the credentials from the application environment (AWS instance role, &#8230;&#8203;),
-but several more options are available.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>For example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">quarkus.hibernate-search-orm.elasticsearch.aws.region=us-east-1
-quarkus.hibernate-search-orm.elasticsearch.aws.signing.enabled=true</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Or, if credentials are not available in the application environment (AWS instance role, &#8230;&#8203;):</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">quarkus.hibernate-search-orm.elasticsearch.aws.region=us-east-1
-quarkus.hibernate-search-orm.elasticsearch.aws.signing.enabled=true
-quarkus.hibernate-search-orm.elasticsearch.aws.credentials.type=static
-quarkus.hibernate-search-orm.elasticsearch.aws.credentials.static-provider.access-key-id=AKIDEXAMPLE
-quarkus.hibernate-search-orm.elasticsearch.aws.credentials.static-provider.secret-access-key=wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY</code></pre>
-</div>
+<p>See <a href="{hibernate-search-orm-elasticsearch-aws-guide}#aws-configuration-reference">the documentation for the Hibernate Search ORM + Elasticsearch AWS extension</a>
+for more information.</p>
 </div>
 </div>
 </div>
@@ -3799,12 +3784,6 @@ for more information.</p>
 </td>
 </tr>
 </table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="configuration-reference-aws"><a class="anchor" href="#configuration-reference-aws"></a>AWS Integration Configuration</h3>
-<div class="paragraph">
-<p>Please see <a href="{hibernate-search-orm-elasticsearch-aws-guide}#aws-configuration-reference">the documentation for the Hibernate Search ORM + Elasticsearch AWS extension</a>.</p>
 </div>
 </div>
 </div>

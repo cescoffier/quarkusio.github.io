@@ -188,6 +188,7 @@
 <li><a href="#caching-the-result-of-programmatic-lookup">5.15. Caching the Result of Programmatic Lookup</a></li>
 <li><a href="#declaratively-choose-beans-that-can-be-obtained-by-programmatic-lookup">5.16. Declaratively Choose Beans That Can Be Obtained by Programmatic Lookup</a></li>
 <li><a href="#injecting-multiple-bean-instances-intuitively">5.17. Injecting Multiple Bean Instances Intuitively</a></li>
+<li><a href="#ignoring-class-level-interceptor-bindings-for-methods-and-constructors">5.18. Ignoring Class-Level Interceptor Bindings for Methods and Constructors</a></li>
 </ul>
 </li>
 <li><a href="#build_time_apis">6. Build Time Extensions</a></li>
@@ -198,7 +199,7 @@
       <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Quarkus DI solution (also called ArC) is based on the <a href="http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html" target="_blank" rel="noopener">Contexts and Dependency Injection for Java 2.0</a> specification.
+<p>Quarkus DI solution (also called ArC) is based on the <a href="https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html" target="_blank" rel="noopener">Contexts and Dependency Injection for Java 2.0</a> specification.
 However, it is not a full CDI implementation verified by the TCK.
 Only a subset of the CDI features is implemented - see also <a href="#supported_features">the list of supported features</a> and <a href="#limitations">the list of limitations</a>.</p>
 </div>
@@ -234,7 +235,7 @@ Most of the existing CDI code should work just fine but there are some small dif
 <div class="paragraph">
 <p>Bean discovery in CDI is a complex process which involves legacy deployment structures and accessibility requirements of the underlying module architecture.
 However, Quarkus is using a <strong>simplified bean discovery</strong>.
-There is only single bean archive with the <a href="https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#default_bean_discovery" target="_blank" rel="noopener">bean discovery mode <code>annotated</code></a> and no visibility boundaries.</p>
+There is only single bean archive with the <a href="https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#default_bean_discovery" target="_blank" rel="noopener">bean discovery mode <code>annotated</code></a> and no visibility boundaries.</p>
 </div>
 <div class="paragraph">
 <p>The bean archive is synthesized from:</p>
@@ -259,7 +260,7 @@ There is only single bean archive with the <a href="https://docs.jboss.org/cdi/s
 </ul>
 </div>
 <div class="paragraph">
-<p>Bean classes that don&#8217;t have a <a href="http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations" target="_blank" rel="noopener">bean defining annotation</a> are not discovered.
+<p>Bean classes that don&#8217;t have a <a href="https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#bean_defining_annotations" target="_blank" rel="noopener">bean defining annotation</a> are not discovered.
 This behavior is defined by CDI.
 But producer methods and fields and observer methods are discovered even if the declaring class is not annotated with a bean defining annotation (this behavior is different to what is defined in CDI).
 In fact, the declaring bean classes are considered annotated with <code>@Dependent</code>.</p>
@@ -1718,6 +1719,56 @@ public class Processor {
      }
 }</code></pre>
 </div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="ignoring-class-level-interceptor-bindings-for-methods-and-constructors"><a class="anchor" href="#ignoring-class-level-interceptor-bindings-for-methods-and-constructors"></a>5.18. Ignoring Class-Level Interceptor Bindings for Methods and Constructors</h3>
+<div class="paragraph">
+<p>If a managed bean declares interceptor binding annotations on the class level, the corresponding <code>@AroundInvoke</code> interceptors will apply to all business methods.
+Similarly, the corresponding <code>@AroundConstruct</code> interceptors will apply to the bean constructor.</p>
+</div>
+<div class="paragraph">
+<p>For example, suppose we have a logging interceptor with the <code>@Logged</code> binding annotation and a tracing interceptor with the <code>@Traced</code> binding annotation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@ApplicationScoped
+@Logged
+public class MyService {
+    public void doSomething() {
+        ...
+    }
+
+    @Traced
+    public void doSomethingElse() {
+        ...
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, both <code>doSomething</code> and <code>doSomethingElse</code> will be intercepted by the hypothetical logging interceptor.
+Additionally, the <code>doSomethingElse</code> method will be intercepted by the hypothetical tracing interceptor.</p>
+</div>
+<div class="paragraph">
+<p>Now, if that <code>@Traced</code> interceptor also performed all the necessary logging, we&#8217;d like to skip the <code>@Logged</code> interceptor for this method, but keep it for all other methods.
+To achieve that, you can annotate the method with <code>@NoClassInterceptors</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@Traced
+@NoClassInterceptors
+public void doSomethingElse() {
+    ...
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>@NoClassInterceptors</code> annotation may be put on methods and constructors and means that all class-level interceptors are ignored for these methods and constructors.
+In other words, if a method/constructor is annotated <code>@NoClassInterceptors</code>, then the only interceptors that will apply to this method/constructor are interceptors declared directly on the method/constructor.</p>
+</div>
+<div class="paragraph">
+<p>This annotation affects only business method interceptors (<code>@AroundInvoke</code>) and constructor lifecycle callback interceptors (<code>@AroundConstruct</code>).</p>
 </div>
 </div>
 </div>
